@@ -43,6 +43,14 @@ start:
 
     call print_prompt
 
+    mov ax, 1234
+    mov bx, 10
+    mov di, temp_buffer
+    call itoa
+
+    mov si, temp_buffer
+    call print_string_cursor
+
 .loop:
     call get_key
     cmp al, 0x0D ; CR
@@ -106,12 +114,15 @@ start:
 input_buffer times 128 db 0
 input_len dw 0x0
 input_cap dw 127
+temp_buffer: times 127 db 'M'
+             db 0
+temp_cap equ ($ - temp_buffer)
 msg db "***8086 Playground Kernel***", 0
 prompt db "/>", 0
 prompt_len dw ($ - prompt - 1)
 heap_top dw 0x0000, 0x7E00
 heap_bot dw 0x7000, 0x0000
-; word: STR, dd NEXT, dd CODE
+; word: dd STR, dd NEXT, dd CODE
 ping_str db "ping", 0
 ping_str_other db "pong!", 0
 ping_str_other_len equ ($ - ping_str_other)
@@ -159,27 +170,70 @@ print_prompt:
     pop cx
     ret
 
-; si: word str, 0 end
-pword:
+; ds: for s1
+; si: s1
+; es: for s2
+; di: s2
+; zero flag if equal
+; non-zero if not equal
+strcmp:
     push ax
-    push cx
+    push bx
+.loop:
+    mov ax, ds:[si]
+    mov bx, es:[di]
+    sub ax, bx
+    jnz .done
+    jmp .loop
+.done:
+    pop bx
+    pop ax
+    ret
 
-    mov al, '!'
-    call teletype
+; si: word str, 0 end
+; bp: first word addr
+; es: first word DS
+pword:
+    push bp
+    push di
+    push ax
+    push bx
+    push ecx
 
+    mov ax, ds
+    mov bx, es
+.loop:
     push si
-    call strlen
+    mov ds, bx
+    mov es, WORD [bp]
+    mov di, WORD [bp+2]
+    mov ds, ax
+    call strcmp
+    jz .found
     pop si
 
-    call print_string_cursor
+    mov ds, bx
 
-    mov al, '!'
-    call teletype
+    mov ecx, DWORD [bp+4]
+    cmp ecx, 0x0
+    je .not_found
 
-    call newline
+    mov bx, [bp+4]
+    mov bp, [bp+6]
 
-    pop cx
+    jmp .loop
+.found:
+    mov ds, bx
+    call FAR [bp+8]
+    jmp .end
+.not_found:
+.end:
+    mov ds, ax
+    pop ecx
+    pop bx
     pop ax
+    pop di
+    pop bp
     ret
 
 command:
@@ -187,6 +241,8 @@ command:
     push bx
     push si
     push di
+    push bp
+    push es
 
     mov si, input_buffer
     mov di, si
@@ -214,7 +270,13 @@ command:
     je .end
 
     push si
+    push bx
     mov si, di
+    mov bp, WORD [first_word+2]
+    mov bx, 0
+    mov es, bx
+    pop bx
+
     call pword
     pop si
 
@@ -230,6 +292,8 @@ command:
     mov di, si
     jmp .loop
 .end:
+    pop es
+    pop bp
     pop di
     pop si
     pop bx
@@ -365,4 +429,70 @@ get_key:
 check_key:
     mov ah, 01h
     int 0x16
+    ret
+
+; si: str
+; bx: base
+; -> cx: attempt (0 if wrong)
+atoi:
+
+    ret
+
+; ax: number
+; bx: base
+; di: buffer
+; -> cx: str length
+itoa:
+    push dx
+
+    mov cx, bx
+    mov bx, 0
+.loop:
+    mov dx, 0
+    cmp ax, 0x0
+    je .zero
+
+    div cx
+.zero:
+    cmp dx, 9
+    jg .big
+    add dx, '0'
+    jmp .other
+.big:
+    sub dx, 10
+    add dx, 'A'
+.other:
+    mov BYTE di[bx], dl
+    inc bx
+    cmp ax, 0
+    je .end
+    jmp .loop
+.end:
+    mov dx, 0
+    mov ax, bx
+    mov cx, 2
+    div cx
+    mov dx, bx
+    mov bx, 0
+    mov si, di
+    add si, dx
+    dec si
+.rev_loop:
+    cmp bx, ax
+    je .total_end
+    mov cl, byte [si]
+    push cx
+    mov cl, byte di[bx]
+    mov byte [si], cl
+    pop cx
+    mov byte di[bx], cl
+    inc bx
+    dec si
+    jmp .rev_loop
+.total_end:
+    mov bx, dx
+    mov byte di[bx], 0
+    mov cx, bx
+
+    pop dx
     ret
