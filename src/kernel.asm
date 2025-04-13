@@ -7,6 +7,11 @@
 ; 0x70000 - 0x7FFFF: kernel stack
 
 start:
+    ; segments
+    mov ax, 0
+    mov ds, ax
+    mov es, ax
+
     ; stack
     cli
     mov ax, 0x7000
@@ -36,6 +41,8 @@ start:
     mov dl, 0
     call cursor_set
 
+    call print_prompt
+
 .loop:
     call get_key
     cmp al, 0x0D ; CR
@@ -51,6 +58,8 @@ start:
     mov WORD [input_len], 0
     mov BYTE [input_buffer], 0
 
+    call print_prompt
+
     jmp .loop
 .std:
     cmp al, 0x08 ; BACKSPACE
@@ -62,6 +71,7 @@ start:
 
     mov di, cx
     mov BYTE input_buffer[di], al
+    mov BYTE input_buffer[di+1], 0
     inc cx
     mov WORD [input_len], cx
 
@@ -97,22 +107,133 @@ input_buffer times 128 db 0
 input_len dw 0x0
 input_cap dw 127
 msg db "***8086 Playground Kernel***", 0
+prompt db "/>", 0
+prompt_len dw ($ - prompt - 1)
 heap_top dw 0x0000, 0x7E00
 heap_bot dw 0x7000, 0x0000
+; word: STR, dd NEXT, dd CODE
+ping_str db "ping", 0
+ping_str_other db "pong!", 0
+ping_str_other_len equ ($ - ping_str_other)
+ping_word:
+    dd ping_str
+    dd 0x0
+    dd ping_code
+first_word: dd ping_word
 
-command:
-    call cursor_get
+ping_code:
+    push si
+    push cx
+    mov si, ping_str
+    mov cx, ping_str_other_len
+    call print_string_cursor
+    call newline
+    pop cx
+    pop si
+    ret
 
-    mov cx, WORD [input_len]
-    mov si, input_buffer
-    call print_string
+newline:
+    push ax
+    push cx
 
-    add dl, cl
-    call cursor_set
+    mov al, 0x0D ; SPACE
+    mov cx, 1
+    call print_char
 
-    mov al, '>'
+    mov al, 0x0A ; SPACE
+    call print_char
+
+    pop cx
+    pop ax
+    ret
+
+print_prompt:
+    push cx
+    push si
+
+    mov si, prompt
+    mov cx, [prompt_len]
+    call print_string_cursor
+
+    pop si
+    pop cx
+    ret
+
+; si: word str, 0 end
+pword:
+    push ax
+    push cx
+
+    mov al, '!'
     call teletype
 
+    push si
+    call strlen
+    pop si
+
+    call print_string_cursor
+
+    mov al, '!'
+    call teletype
+
+    call newline
+
+    pop cx
+    pop ax
+    ret
+
+command:
+    push ax
+    push bx
+    push si
+    push di
+
+    mov si, input_buffer
+    mov di, si
+    mov bx, 0x20
+
+    cld
+.loop:
+    lodsb
+    cmp al, 0
+    je .word
+
+    cmp al, 0x20 ; ' '
+    jne .next
+    cmp al, bl
+    je .same
+    mov BYTE [si - 1], 0
+    jmp .word
+
+    jmp .loop
+.next:
+    mov bl, al
+    jmp .loop
+.word:
+    cmp bl, 0x20
+    je .end
+
+    push si
+    mov si, di
+    call pword
+    pop si
+
+    cmp al, 0
+    je .end
+
+    mov bx, 0x20
+    mov di, si
+
+    jmp .loop
+.same:
+    inc si
+    mov di, si
+    jmp .loop
+.end:
+    pop di
+    pop si
+    pop bx
+    pop ax
     ret
 
 ; al: desired video mode
@@ -177,6 +298,34 @@ print_string:
     mov bh, 0
     mov bl, 7
     int 0x10
+    pop bp
+    pop bx
+    pop ax
+    ret
+
+; si: str
+; cx: str len
+print_string_cursor:
+    push ax
+    push bx
+    push bp
+    push dx
+
+    push cx
+    call cursor_get
+    pop cx
+
+    mov bp, si
+    mov ah, 0x13
+    mov al, 0
+    mov bh, 0
+    mov bl, 7
+    int 0x10
+
+    add dl, cl
+    call cursor_set
+
+    pop dx
     pop bp
     pop bx
     pop ax
