@@ -38,17 +38,82 @@ start:
 
 .loop:
     call get_key
-    cmp al, 0x0D
+    cmp al, 0x0D ; CR
     jne .std
+
     call teletype
-    mov al, 0x0A
+
+    mov al, 0x0A ; LF
     call teletype
+
+    call command
+
+    mov WORD [input_len], 0
+    mov BYTE [input_buffer], 0
+
     jmp .loop
 .std:
+    cmp al, 0x08 ; BACKSPACE
+    je .del
+
+    mov cx, WORD [input_len]
+    cmp cx, [input_cap]
+    je .loop
+
+    mov di, cx
+    mov BYTE input_buffer[di], al
+    inc cx
+    mov WORD [input_len], cx
+
     call teletype
     jmp .loop
+.del:
+    mov cx, WORD [input_len]
+    cmp cx, 0
 
+    je .loop
+
+    call teletype
+
+    push cx
+    mov al, 0x20 ; SPACE
+    mov cx, 1
+    call print_char
+
+    call cursor_get
+    dec dl
+    call cursor_set
+
+    pop cx
+
+    dec cx
+    mov di, cx
+    mov BYTE input_buffer[di], 0
+    mov WORD [input_len], cx
+
+    jmp .loop
+
+input_buffer times 128 db 0
+input_len dw 0x0
+input_cap dw 127
 msg db "***8086 Playground Kernel***", 0
+heap_top dw 0x0000, 0x7E00
+heap_bot dw 0x7000, 0x0000
+
+command:
+    call cursor_get
+
+    mov cx, WORD [input_len]
+    mov si, input_buffer
+    call print_string
+
+    add dl, cl
+    call cursor_set
+
+    mov al, '>'
+    call teletype
+
+    ret
 
 ; al: desired video mode
 video_set:
