@@ -35,19 +35,6 @@ start:
 
     call print_prompt
 
-    mov si, ping_str
-    mov di, ping_str
-
-    call strcmp
-    jnz .ne
-    mov si, msg_equal
-    mov cx, msg_equal_len
-    jmp .go
-.ne:
-    mov si, msg_inequal
-    mov cx, msg_inequal_len
-.go:
-    call print_string_cursor
 .loop:
     call get_key
     cmp al, 0x0D ; CR
@@ -94,10 +81,6 @@ start:
     mov al, 0x20 ; SPACE
     mov cx, 1
     call print_char
-
-    call cursor_get
-    dec dl
-    call cursor_set
 
     pop cx
 

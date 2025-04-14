@@ -23,11 +23,11 @@ heap_bot dw 0x7000, 0x0000
 ; word: dd STR, dd NEXT, dd CODE
 ping_str db "ping", 0
 ping_str_other db "pong!", 0
-ping_str_other_len equ ($ - ping_str_other)
+ping_str_other_len equ ($ - ping_str_other - 1)
 ping_word:
-    dd ping_str
+    dw 0x0, ping_str
     dd 0x0
-    dd ping_code
+    dw ping_code, 0x0
 
 first_word:
-    dd ping_word
+    dw 0x0, ping_word

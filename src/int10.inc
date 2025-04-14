@@ -54,12 +54,11 @@ newline:
     push ax
     push cx
 
-    mov al, 0x0D ; SPACE
-    mov cx, 1
-    call print_char
+    mov al, 0x0D ; CR
+    call teletype
 
-    mov al, 0x0A ; SPACE
-    call print_char
+    mov al, 0x0A ; LF
+    call teletype
 
     pop cx
     pop ax
@@ -107,6 +106,7 @@ teletype:
 ; cx: number of times
 print_char:
     push bx
+    mov ah, 0x0A
     mov bh, 0
     mov bl, 0
     int 0x10

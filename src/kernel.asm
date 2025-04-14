@@ -15,13 +15,13 @@
 ping_code:
     push si
     push cx
-    mov si, ping_str
+    mov si, ping_str_other
     mov cx, ping_str_other_len
     call print_string_cursor
     call newline
     pop cx
     pop si
-    ret
+    retf
 
 print_prompt:
     push cx
@@ -36,50 +36,51 @@ print_prompt:
     ret
 
 ; si: word str, 0 end
-; bp: first word addr
+; bx: first word addr
 ; es: first word DS
 pword:
-    push bp
     push di
     push ax
     push bx
     push ecx
+    push dx
 
     mov ax, ds
-    mov bx, es
+    mov dx, es
 .loop:
-
     push si
-    mov ds, bx
-    mov es, WORD [bp]
-    mov di, WORD [bp+2]
+    mov ds, dx
+    mov es, WORD [bx]
+    mov di, WORD [bx+2]
     mov ds, ax
+
     call strcmp
     jz .found
     pop si
 
-    mov ds, bx
+    mov ds, dx
 
-    mov ecx, DWORD [bp+4]
+    mov ecx, DWORD [bx+4]
     cmp ecx, 0x0
     je .not_found
 
-    mov bx, [bp+4]
-    mov bp, [bp+6]
+    mov dx, [bx+4]
+    mov bx, [bx+6]
 
     jmp .loop
 .found:
-    mov ds, bx
-    call FAR [bp+8]
+    pop si
+    mov ds, dx
+    call FAR [bx+8]
     jmp .end
 .not_found:
 .end:
     mov ds, ax
+    pop dx
     pop ecx
     pop bx
     pop ax
     pop di
-    pop bp
     ret
 
 command:
@@ -116,14 +117,16 @@ command:
     je .end
 
     push si
+    push es
     push bx
     mov si, di
-    mov bp, WORD [first_word+2]
-    mov bx, 0
+    mov bx, WORD [first_word]
     mov es, bx
-    pop bx
+    mov bx, WORD [first_word+2]
 
     call pword
+    pop bx
+    pop es
     pop si
 
     cmp al, 0
