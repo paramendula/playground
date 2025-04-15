@@ -5,24 +5,17 @@
 ; Memory Layout
 ; 0x00500 - 0x07E00: kernel code
 ; 0x07E00 - 0x70000: heap
+    ; 0x07E00 - 0x17E00: programming stack
+    ; 0x17E00 - 0x70000: programming heap
 ; 0x70000 - 0x7FFFF: kernel stack
 
 %include "src/start.inc"
 %include "src/data.inc"
+%include "src/pstack.inc"
+%include "src/words/words.inc"
 %include "src/int10.inc"
 %include "src/int16.inc"
 %include "src/str.inc"
-
-ping_code:
-    push si
-    push cx
-    mov si, ping_str_other
-    mov cx, ping_str_other_len
-    call print_string_cursor
-    call newline
-    pop cx
-    pop si
-    retf
 
 print_prompt:
     push cx
@@ -51,8 +44,8 @@ pword:
 .loop:
     push si
     mov ds, dx
-    mov es, WORD [bx]
-    mov di, WORD [bx+2]
+    mov es, WORD [bx+2]
+    mov di, WORD [bx]
     mov ds, ax
 
     call strcmp
@@ -63,11 +56,13 @@ pword:
 
     mov cx, WORD [bx+4]
     cmp cx, 0x0
-    je .not_found
+    je .check_segment
+    jmp .all_good
+.check_segment:
     mov cx, WORD [bx+6]
     cmp cx, 0x0
     je .not_found
-
+.all_good:
     mov dx, [bx+4]
     mov bx, [bx+6]
 
@@ -124,9 +119,9 @@ command:
     push es
     push bx
     mov si, di
-    mov bx, WORD [first_word]
-    mov es, bx
     mov bx, WORD [first_word+2]
+    mov es, bx
+    mov bx, WORD [first_word]
 
     call pword
     pop bx

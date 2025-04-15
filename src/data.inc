@@ -9,25 +9,18 @@ temp_cap equ ($ - temp_buffer)
 
 msg db "***8086 Playground Kernel***", 0
 
-msg_equal db "equal", 0
-msg_equal_len equ ($ - msg_equal - 1)
-msg_inequal db "inequal", 0
-msg_inequal_len equ ($ - msg_inequal - 1)
-
 prompt db "/>", 0
 prompt_len dw ($ - prompt - 1)
 
-heap_top dw 0x0000, 0x7E00
-heap_bot dw 0x7000, 0x0000
+pheap_bot dw 0x1000, 0x07E00
+pheap_top dw 0x7000, 0x00000
+pheap_cur dw 0x0001, 0x07E00
 
-; word: dd STR, dd NEXT, dd CODE
-ping_str db "ping", 0
-ping_str_other db "pong!", 0
-ping_str_other_len equ ($ - ping_str_other - 1)
-ping_word:
-    dw 0x0, ping_str
-    dd 0x0
-    dw ping_code, 0x0
+pstack_bot dw 0x0000, 0x7E00
+pstack_top dw 0x1000, 0x7E00
+pstack_cur dw 0x1000, 0x7E00
+
+%include "src/words/words_data.inc"
 
 first_word:
-    dw 0x0, ping_word
+    dw ping_word, 0x0
