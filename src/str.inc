@@ -2,7 +2,7 @@
 ; si: str
 ; -> cx: str len
 strlen:
-push ax
+    push ax
     mov cx, 0
     cld
 .loop:
@@ -45,8 +45,59 @@ strcmp:
 ; bx: base
 ; -> cx: attempt (0 if wrong)
 atoi:
+    push ax
 
-ret
+    mov cx, 0
+.loop:
+    lodsb
+    cmp al, 0
+    je .end
+
+    cmp al, '0'
+    jl .bad
+    cmp al, '9'
+    jle .digit
+    cmp al, 'A'
+    jl .bad
+    cmp al, 'Z'
+    jle .hdigit
+    cmp al, 'a'
+    jl .bad
+    cmp al, 'z'
+    jg .bad
+    jmp .prehdigit
+
+.digit:
+    sub al, '0'
+    jmp .left
+.prehdigit:
+    sub al, 'a'
+    add al, 10
+    jmp .left
+.hdigit:
+    sub al, 'A'
+    add al, 10
+    jmp .left
+.bad:
+    mov cx, 0
+    jmp .end
+.left:
+    cmp ax, bx
+    jge .bad
+
+    push ax
+    mov ax, cx
+    mul bx
+    mov cx, ax
+    pop ax
+
+    add cx, ax
+    jmp .loop
+.end:
+
+    pop ax
+
+    ret
 
 ; ax: number
 ; bx: base
