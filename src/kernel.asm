@@ -1,5 +1,6 @@
 [org 0x0900]
 [bits 16]
+[cpu 8086]
 
 ; Memory Layout
 ; 0x00500 - 0x07E00: kernel code
@@ -42,7 +43,7 @@ pword:
     push di
     push ax
     push bx
-    push ecx
+    push cx
     push dx
 
     mov ax, ds
@@ -60,8 +61,11 @@ pword:
 
     mov ds, dx
 
-    mov ecx, DWORD [bx+4]
-    cmp ecx, 0x0
+    mov cx, WORD [bx+4]
+    cmp cx, 0x0
+    je .not_found
+    mov cx, WORD [bx+6]
+    cmp cx, 0x0
     je .not_found
 
     mov dx, [bx+4]
@@ -77,7 +81,7 @@ pword:
 .end:
     mov ds, ax
     pop dx
-    pop ecx
+    pop cx
     pop bx
     pop ax
     pop di

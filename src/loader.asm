@@ -1,5 +1,6 @@
 [org 0x0700]
 [bits 16]
+[cpu 8086]
 
 start:
     ; load kernel

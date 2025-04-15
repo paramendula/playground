@@ -1,5 +1,6 @@
 [org 0x7C00]
 [bits 16]
+[cpu 8086]
 
 start:
     mov ax, 0
