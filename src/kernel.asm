@@ -9,8 +9,12 @@
     ; 0x17E00 - 0x70000: programming heap
 ; 0x70000 - 0x7FFFF: kernel stack
 
+%include "src/macro.inc"
+
+section .text
 %include "src/start.inc"
 %include "src/data.inc"
+section .text
 %include "src/pstack.inc"
 %include "src/words/words.inc"
 %include "src/int10.inc"
@@ -46,6 +50,7 @@ pword:
     mov ds, dx
     mov es, WORD [bx+2]
     mov di, WORD [bx]
+
     mov ds, ax
 
     call strcmp
@@ -63,8 +68,8 @@ pword:
     cmp cx, 0x0
     je .not_found
 .all_good:
-    mov dx, [bx+4]
-    mov bx, [bx+6]
+    mov dx, WORD [bx+6]
+    mov bx, WORD [bx+4]
 
     jmp .loop
 .found:
@@ -85,6 +90,7 @@ pword:
 command:
     push ax
     push bx
+    push cx
     push si
     push di
     push bp
@@ -116,17 +122,36 @@ command:
     je .end
 
     push si
-    push es
     push bx
+
     mov si, di
+
+    ;; atoi
+    mov bx, 10
+    call atoi
+
+    jc .not_number
+    push ax
+    mov ax, cx
+    call pstack_push_ax
+
+    pop ax
+    jmp .then
+.not_number:
+    mov si, di
+    ;; pword
+    push es
     mov bx, WORD [first_word+2]
     mov es, bx
     mov bx, WORD [first_word]
 
     call pword
-    pop bx
+
     pop es
+.then:
+    pop bx
     pop si
+    ;;
 
     cmp al, 0
     je .end
@@ -144,6 +169,7 @@ command:
     pop bp
     pop di
     pop si
+    pop cx
     pop bx
     pop ax
     ret

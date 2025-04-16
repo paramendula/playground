@@ -3,6 +3,7 @@
 ; -> cx: str len
 strlen:
     push ax
+
     mov cx, 0
     cld
 .loop:
@@ -44,10 +45,13 @@ strcmp:
 ; si: str
 ; bx: base
 ; -> cx: attempt (0 if wrong)
+; -> cf if a number, otherwise not a number
 atoi:
     push ax
 
+    mov ax, 0
     mov cx, 0
+    clc
 .loop:
     lodsb
     cmp al, 0
@@ -80,6 +84,7 @@ atoi:
     jmp .left
 .bad:
     mov cx, 0
+    stc
     jmp .end
 .left:
     cmp ax, bx

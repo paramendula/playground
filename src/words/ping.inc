@@ -11,5 +11,5 @@ ping_code:
 
 ping_word:
     dw ping_str, 0x0
-    dd 0x0
+    dw stack_print_word, 0x0
     dw ping_code, 0x0
