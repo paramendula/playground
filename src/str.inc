@@ -45,13 +45,22 @@ strcmp:
 ; si: str
 ; bx: base
 ; -> cx: attempt (0 if wrong)
-; -> cf if a number, otherwise not a number
+; -> dx=0 if a number, otherwise not a number
 atoi:
     push ax
 
+    mov dx, 0
+    mov al, [si]
+    cmp al, '-'
+    jne .no_minus
+    mov al, [si+1]
+    cmp al, 0
+    je .bad
+    inc si
+    mov dx, 1
+.no_minus:
     mov ax, 0
     mov cx, 0
-    clc
 .loop:
     lodsb
     cmp al, 0
@@ -84,21 +93,28 @@ atoi:
     jmp .left
 .bad:
     mov cx, 0
-    stc
+    mov dx, 2
     jmp .end
 .left:
     cmp ax, bx
     jge .bad
 
     push ax
+    push dx
     mov ax, cx
     mul bx
     mov cx, ax
+    pop dx
     pop ax
 
     add cx, ax
     jmp .loop
 .end:
+    cmp dx, 1
+    jne .dont_negate
+    mov dx, 0
+    neg cx
+.dont_negate:
 
     pop ax
 
@@ -110,7 +126,16 @@ atoi:
 ; -> cx: str length
 itoa:
     push dx
+    push bp
 
+    mov bp, 0
+    cmp bx, 10
+    jne .dont_check
+    cmp ax, 0
+    jge .dont_check
+    neg ax
+    mov bp, 1
+.dont_check:
     mov cx, bx
     mov bx, 0
 .loop:
@@ -134,6 +159,11 @@ itoa:
     je .end
     jmp .loop
 .end:
+    cmp bp, 0
+    je .no_minus
+    mov BYTE di[bx], '-'
+    inc bx
+.no_minus:
     mov dx, 0
     mov ax, bx
     mov cx, 2
@@ -160,5 +190,6 @@ itoa:
     mov byte di[bx], 0
     mov cx, bx
 
+    pop bp
     pop dx
     ret

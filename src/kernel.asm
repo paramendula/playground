@@ -95,6 +95,7 @@ command:
     push di
     push bp
     push es
+    push dx
 
     mov si, input_buffer
     mov di, si
@@ -130,7 +131,8 @@ command:
     mov bx, 10
     call atoi
 
-    jc .not_number
+    cmp dx, 0
+    jne .not_number
     push ax
     mov ax, cx
     call pstack_push_ax
@@ -165,6 +167,8 @@ command:
     mov di, si
     jmp .loop
 .end:
+
+    pop dx
     pop es
     pop bp
     pop di
