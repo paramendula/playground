@@ -35,6 +35,8 @@ start:
 
     call print_prompt
 
+    call load_words
+
 .loop:
     call get_key
     cmp al, 0x0D ; CR

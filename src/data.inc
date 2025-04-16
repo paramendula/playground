@@ -23,4 +23,4 @@ pstack_cur dw 0x7E00, 0x1000
 %include "src/words/words_data.inc"
 
 first_word:
-    dw ping_word, 0x0
+    dd 0x0

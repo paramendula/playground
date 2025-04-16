@@ -55,3 +55,19 @@ pstack_pop_ax:
     pop bx
 
     ret
+
+; -> ax
+pstack_peek_ax:
+    push bx
+    push es
+
+    mov bx, word [pstack_cur+2]
+    mov es, bx
+    mov bx, word [pstack_cur]
+
+    mov ax, word [es:bx]
+
+    pop es
+    pop bx
+
+    ret
